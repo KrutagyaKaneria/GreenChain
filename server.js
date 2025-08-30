@@ -12,6 +12,11 @@ const path = require('path');
 // Routes
 const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
+const adminRoutes = require('./routes/admin');
+const producerRoutes = require('./routes/producer');
+const verifierRoutes = require('./routes/verifier');
+const buyerRoutes = require('./routes/buyer');
+const regulatorRoutes = require('./routes/regulator');
 
 // Middleware
 const { authenticate } = require('./middleware/auth');
@@ -68,6 +73,11 @@ if (process.env.NODE_ENV === 'production') {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/protected', protectedRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/producer', producerRoutes);
+app.use('/api/verifier', verifierRoutes);
+app.use('/api/buyer', buyerRoutes);
+app.use('/api/regulator', regulatorRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

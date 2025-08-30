@@ -34,7 +34,28 @@ const BuyerDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // Mock data for now
+      
+      // Fetch metrics
+      const metricsResponse = await api.get('/buyer/dashboard/metrics');
+      if (metricsResponse.data.success) {
+        setMetrics(metricsResponse.data.data);
+      }
+      
+      // Fetch marketplace listings
+      const marketplaceResponse = await api.get('/buyer/marketplace');
+      if (marketplaceResponse.data.success) {
+        setMarketplaceListings(marketplaceResponse.data.data);
+      }
+      
+      // Fetch purchase history
+      const historyResponse = await api.get('/buyer/purchase-history');
+      if (historyResponse.data.success) {
+        setPurchaseHistory(historyResponse.data.data);
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Fallback to mock data if API fails
       setMetrics({
         totalPurchased: 45,
         totalSpent: 125000,
@@ -102,9 +123,6 @@ const BuyerDashboard = () => {
           retiredAt: null
         }
       ]);
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -125,6 +143,53 @@ const BuyerDashboard = () => {
 
   const handleRetireCredit = (creditId) => {
     console.log(`Retiring credit ${creditId}`);
+  };
+
+  const handleQuickAction = async (action) => {
+    console.log('Buyer Quick Action:', action);
+    
+    try {
+      switch (action) {
+        case 'browse-marketplace':
+          console.log('Opening Marketplace...');
+          const marketplaceResponse = await api.get('/buyer/marketplace');
+          if (marketplaceResponse.data.success) {
+            console.log('Marketplace Listings:', marketplaceResponse.data.data);
+            // TODO: Open marketplace modal with data
+          }
+          break;
+        case 'compliance-report':
+          console.log('Opening Compliance Report...');
+          const complianceResponse = await api.get('/buyer/compliance-report');
+          if (complianceResponse.data.success) {
+            console.log('Compliance Report:', complianceResponse.data.data);
+            // TODO: Open compliance report modal with data
+          }
+          break;
+        case 'export-portfolio':
+          console.log('Exporting Portfolio...');
+          const exportResponse = await api.get('/buyer/export/portfolio?format=csv');
+          if (exportResponse.data) {
+            console.log('Portfolio Export:', exportResponse.data);
+            // TODO: Handle CSV download
+          }
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Error in quick action:', error);
+    }
+  };
+
+  const handleListingClick = (listing) => {
+    console.log('Marketplace listing clicked:', listing);
+    // TODO: Show listing details modal or navigate to listing details
+  };
+
+  const handlePurchaseClick = (purchase) => {
+    console.log('Purchase history clicked:', purchase);
+    // TODO: Show purchase details modal or navigate to purchase details
   };
 
   if (loading) {
@@ -217,7 +282,11 @@ const BuyerDashboard = () => {
           <div className="p-6">
             <div className="space-y-4">
               {marketplaceListings.map((listing) => (
-                <div key={listing.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div 
+                  key={listing.id} 
+                  onClick={() => handleListingClick(listing)}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                >
                   <div className="flex items-center space-x-4">
                     <div className="text-center">
                       <p className="text-lg font-bold text-gray-900">{listing.tokenId}</p>
@@ -243,7 +312,7 @@ const BuyerDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4" onClick={(e) => e.stopPropagation()}>
                     <div className="text-right">
                       <p className="text-lg font-bold text-gray-900">${listing.price.toLocaleString()}</p>
                       <p className="text-xs text-gray-500">Price</p>
@@ -269,7 +338,11 @@ const BuyerDashboard = () => {
           <div className="p-6">
             <div className="space-y-4">
               {purchaseHistory.map((purchase) => (
-                <div key={purchase.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div 
+                  key={purchase.id} 
+                  onClick={() => handlePurchaseClick(purchase)}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                >
                   <div className="flex items-center space-x-4">
                     <div className="text-center">
                       <p className="text-lg font-bold text-gray-900">{purchase.tokenId}</p>
@@ -285,7 +358,7 @@ const BuyerDashboard = () => {
                     </div>
                     <div className="border-l border-gray-300 pl-4">
                       <p className="text-sm font-medium text-gray-900">${purchase.price.toLocaleString()}</p>
-                      <p className="text-xs text-gray-600">Price</p>
+                      <p className="text-xs text-gray-500">Price</p>
                     </div>
                     <div className="border-l border-gray-300 pl-4">
                       <div className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -295,7 +368,7 @@ const BuyerDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                     {purchase.status === 'owned' && (
                       <button
                         onClick={() => handleRetireCredit(purchase.tokenId)}
@@ -316,7 +389,10 @@ const BuyerDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('browse-marketplace')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <ShoppingCart className="h-8 w-8 text-blue-600" />
               <div className="text-left">
@@ -326,7 +402,10 @@ const BuyerDashboard = () => {
             </div>
           </button>
 
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('compliance-report')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <BarChart3 className="h-8 w-8 text-green-600" />
               <div className="text-left">
@@ -336,7 +415,10 @@ const BuyerDashboard = () => {
             </div>
           </button>
 
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('export-portfolio')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <Download className="h-8 w-8 text-purple-600" />
               <div className="text-left">

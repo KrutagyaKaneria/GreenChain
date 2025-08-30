@@ -39,7 +39,34 @@ const RegulatorDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // Mock data for now
+      
+      // Fetch metrics
+      const metricsResponse = await api.get('/regulator/dashboard/metrics');
+      if (metricsResponse.data.success) {
+        setMetrics(metricsResponse.data.data);
+      }
+      
+      // Fetch compliance summary
+      const complianceResponse = await api.get('/regulator/dashboard/compliance-summary');
+      if (complianceResponse.data.success) {
+        setComplianceSummary(complianceResponse.data.data);
+      }
+      
+      // Fetch recent audit logs
+      const auditResponse = await api.get('/regulator/dashboard/recent-audit-logs');
+      if (auditResponse.data.success) {
+        setRecentAuditLogs(auditResponse.data.data);
+      }
+      
+      // Fetch suspicious activities
+      const suspiciousResponse = await api.get('/regulator/dashboard/suspicious-activities');
+      if (suspiciousResponse.data.success) {
+        setSuspiciousActivities(suspiciousResponse.data.data);
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Fallback to mock data if API fails
       setMetrics({
         totalCredits: 12500,
         verifiedCredits: 11800,
@@ -129,9 +156,6 @@ const RegulatorDashboard = () => {
           severity: 'low'
         }
       ]);
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -157,6 +181,58 @@ const RegulatorDashboard = () => {
 
   const handleEnforcementAction = (buyerId, action) => {
     console.log(`Taking enforcement action ${action} on buyer ${buyerId}`);
+  };
+
+  const handleQuickAction = async (action) => {
+    console.log('Regulator Quick Action:', action);
+    
+    try {
+      switch (action) {
+        case 'generate-reports':
+          console.log('Generating compliance reports...');
+          const reportResponse = await api.get('/regulator/reports/compliance');
+          if (reportResponse.data.success) {
+            console.log('Compliance Report:', reportResponse.data.data);
+            // TODO: Open report modal with data
+          }
+          break;
+        case 'enforcement-actions':
+          console.log('Opening enforcement actions...');
+          const complianceResponse = await api.get('/regulator/dashboard/compliance-summary');
+          if (complianceResponse.data.success) {
+            console.log('Compliance Summary:', complianceResponse.data.data);
+            // TODO: Open enforcement actions modal with data
+          }
+          break;
+        case 'export-data':
+          console.log('Exporting regulatory data...');
+          const exportResponse = await api.get('/regulator/export/regulatory-data?format=csv');
+          if (exportResponse.data) {
+            console.log('Regulatory Data Export:', exportResponse.data);
+            // TODO: Handle CSV download
+          }
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Error in quick action:', error);
+    }
+  };
+
+  const handleBuyerClick = (buyer) => {
+    console.log('Buyer compliance clicked:', buyer);
+    // TODO: Show buyer compliance details modal
+  };
+
+  const handleAuditLogClick = (log) => {
+    console.log('Audit log clicked:', log);
+    // TODO: Show audit log details modal
+  };
+
+  const handleSuspiciousActivityClick = (activity) => {
+    console.log('Suspicious activity clicked:', activity);
+    // TODO: Show suspicious activity details modal
   };
 
   if (loading) {
@@ -243,7 +319,11 @@ const RegulatorDashboard = () => {
           <div className="p-6">
             <div className="space-y-4">
               {complianceSummary.map((buyer) => (
-                <div key={buyer.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div 
+                  key={buyer.id} 
+                  onClick={() => handleBuyerClick(buyer)}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                >
                   <div className="flex items-center space-x-4">
                     <div className="text-center">
                       <p className="text-sm font-medium text-gray-900">{buyer.buyer}</p>
@@ -267,7 +347,7 @@ const RegulatorDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                     {buyer.status === 'non-compliant' && (
                       <button
                         onClick={() => handleEnforcementAction(buyer.id, 'suspend')}
@@ -296,7 +376,11 @@ const RegulatorDashboard = () => {
             <div className="p-6">
               <div className="space-y-4">
                 {recentAuditLogs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div 
+                    key={log.id} 
+                    onClick={() => handleAuditLogClick(log)}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                  >
                     <div className="flex items-center space-x-3">
                       {getSeverityIcon(log.severity)}
                       <div>
@@ -323,7 +407,11 @@ const RegulatorDashboard = () => {
             <div className="p-6">
               <div className="space-y-3">
                 {suspiciousActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div 
+                    key={activity.id} 
+                    onClick={() => handleSuspiciousActivityClick(activity)}
+                    className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                  >
                     {getSeverityIcon(activity.severity)}
                     <div className="flex-1">
                       <p className="text-sm text-gray-900">{activity.message}</p>
@@ -341,7 +429,10 @@ const RegulatorDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('generate-reports')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <FileText className="h-8 w-8 text-blue-600" />
               <div className="text-left">
@@ -351,7 +442,10 @@ const RegulatorDashboard = () => {
             </div>
           </button>
 
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('enforcement-actions')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <Shield className="h-8 w-8 text-green-600" />
               <div className="text-left">
@@ -361,7 +455,10 @@ const RegulatorDashboard = () => {
             </div>
           </button>
 
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('export-data')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <Download className="h-8 w-8 text-purple-600" />
               <div className="text-left">

@@ -38,11 +38,34 @@ const ProducerDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API calls
-      // const response = await api.get('/producer/dashboard');
-      // setMetrics(response.data);
       
-      // Mock data for now
+      // Fetch metrics
+      const metricsResponse = await api.get('/producer/dashboard/metrics');
+      if (metricsResponse.data.success) {
+        setMetrics(metricsResponse.data.data);
+      }
+      
+      // Fetch recent data
+      const recentDataResponse = await api.get('/producer/dashboard/recent-data');
+      if (recentDataResponse.data.success) {
+        setRecentData(recentDataResponse.data.data);
+      }
+      
+      // Fetch sensor alerts
+      const alertsResponse = await api.get('/producer/dashboard/sensor-alerts');
+      if (alertsResponse.data.success) {
+        setSensorAlerts(alertsResponse.data.data);
+      }
+      
+      // Fetch production chart data
+      const chartResponse = await api.get('/producer/dashboard/production-chart');
+      if (chartResponse.data.success) {
+        setProductionChart(chartResponse.data.data);
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Fallback to mock data if API fails
       setMetrics({
         todayProduction: 1250.5,
         currentCarbonIntensity: 2.1,
@@ -109,9 +132,6 @@ const ProducerDashboard = () => {
         });
       }
       setProductionChart(chartData);
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -134,6 +154,58 @@ const ProducerDashboard = () => {
       case 'info': return <Clock className="h-5 w-5 text-blue-500" />;
       default: return <Activity className="h-5 w-5 text-gray-500" />;
     }
+  };
+
+  const handleQuickAction = async (action) => {
+    console.log('Producer Quick Action:', action);
+    
+    try {
+      switch (action) {
+        case 'add-sensor':
+          console.log('Opening Add Sensor form...');
+          const sensorsResponse = await api.get('/producer/sensors');
+          if (sensorsResponse.data.success) {
+            console.log('Current Sensors:', sensorsResponse.data.data);
+            // TODO: Open add sensor modal with current sensors data
+          }
+          break;
+        case 'issue-credits':
+          console.log('Opening Issue Credits form...');
+          const creditsResponse = await api.get('/producer/credits');
+          if (creditsResponse.data.success) {
+            console.log('Current Credits:', creditsResponse.data.data);
+            // TODO: Open credit issuance modal with current credits data
+          }
+          break;
+        case 'sensor-management':
+          console.log('Opening Sensor Management...');
+          const sensorMgmtResponse = await api.get('/producer/sensors');
+          if (sensorMgmtResponse.data.success) {
+            console.log('Sensor Management:', sensorMgmtResponse.data.data);
+            // TODO: Open sensor management modal with data
+          }
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Error in quick action:', error);
+    }
+  };
+
+  const handleAlertClick = (alert) => {
+    console.log('Sensor Alert clicked:', alert);
+    // TODO: Handle alert actions (dismiss, view sensor details, etc.)
+  };
+
+  const handleDataClick = (data) => {
+    console.log('Production Data clicked:', data);
+    // TODO: Handle data actions (view details, edit, etc.)
+  };
+
+  const handleChartClick = (data, index) => {
+    console.log('Chart data clicked:', { data, index });
+    // TODO: Show detailed view for this time period
   };
 
   if (loading) {
@@ -219,9 +291,17 @@ const ProducerDashboard = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">24-Hour Production</h3>
             <div className="h-64 flex items-end justify-between space-x-1">
               {productionChart.map((data, index) => (
-                <div key={index} className="flex flex-col items-center space-y-2">
-                  <div className="w-8 bg-blue-500 rounded-t" style={{ height: `${(data.production / 150) * 200}px` }}></div>
-                  <span className="text-xs text-gray-500">{data.hour}:00</span>
+                <div 
+                  key={index} 
+                  onClick={() => handleChartClick(data, index)}
+                  className="flex flex-col items-center space-y-2 cursor-pointer group"
+                >
+                  <div 
+                    className="w-8 bg-blue-500 rounded-t hover:bg-blue-600 transition-colors" 
+                    style={{ height: `${(data.production / 150) * 200}px` }}
+                    title={`${data.hour}:00 - ${data.production.toFixed(1)} kg (${data.carbonIntensity.toFixed(2)} kg CO₂/kg H₂)`}
+                  ></div>
+                  <span className="text-xs text-gray-500 group-hover:text-blue-600 transition-colors">{data.hour}:00</span>
                 </div>
               ))}
             </div>
@@ -270,26 +350,30 @@ const ProducerDashboard = () => {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {recentData.map((data) => (
-                  <div key={data.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-2 rounded-full ${getStatusColor(data.status)}`}>
-                        {data.status === 'validated' && <CheckCircle className="h-4 w-4" />}
-                        {data.status === 'pending' && <Clock className="h-4 w-4" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{data.productionVolume} kg</p>
-                        <p className="text-sm text-gray-600">{data.carbonIntensity} kg CO₂/kg H₂</p>
-                      </div>
+                              {recentData.map((data) => (
+                <div 
+                  key={data.id} 
+                  onClick={() => handleDataClick(data)}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className={`p-2 rounded-full ${getStatusColor(data.status)}`}>
+                      {data.status === 'validated' && <CheckCircle className="h-4 w-4" />}
+                      {data.status === 'pending' && <Clock className="h-4 w-4" />}
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-900">{data.sensorId}</p>
-                      <p className="text-xs text-gray-500">
-                        {data.timestamp.toLocaleTimeString()}
-                      </p>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{data.productionVolume} kg</p>
+                      <p className="text-sm text-gray-600">{data.carbonIntensity} kg CO₂/kg H₂</p>
                     </div>
                   </div>
-                ))}
+                  <div className="text-right">
+                    <p className="text-sm text-gray-900">{data.sensorId}</p>
+                    <p className="text-xs text-gray-500">
+                      {data.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
               </div>
             </div>
           </div>
@@ -301,17 +385,21 @@ const ProducerDashboard = () => {
             </div>
             <div className="p-6">
               <div className="space-y-3">
-                {sensorAlerts.map((alert) => (
-                  <div key={alert.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                    {getAlertIcon(alert.type)}
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900">{alert.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Sensor: {alert.sensorId} • {alert.timestamp.toLocaleTimeString()}
-                      </p>
-                    </div>
+                              {sensorAlerts.map((alert) => (
+                <div 
+                  key={alert.id} 
+                  onClick={() => handleAlertClick(alert)}
+                  className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                >
+                  {getAlertIcon(alert.type)}
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900">{alert.message}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Sensor: {alert.sensorId} • {alert.timestamp.toLocaleTimeString()}
+                    </p>
                   </div>
-                ))}
+                </div>
+              ))}
               </div>
             </div>
           </div>
@@ -319,7 +407,10 @@ const ProducerDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('add-sensor')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <Plus className="h-8 w-8 text-green-600" />
               <div className="text-left">
@@ -329,7 +420,10 @@ const ProducerDashboard = () => {
             </div>
           </button>
 
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('issue-credits')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <BarChart3 className="h-8 w-8 text-blue-600" />
               <div className="text-left">
@@ -339,7 +433,10 @@ const ProducerDashboard = () => {
             </div>
           </button>
 
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('sensor-management')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <Settings className="h-8 w-8 text-purple-600" />
               <div className="text-left">

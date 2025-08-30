@@ -35,7 +35,22 @@ const VerifierDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // Mock data for now
+      
+      // Fetch metrics
+      const metricsResponse = await api.get('/verifier/dashboard/metrics');
+      if (metricsResponse.data.success) {
+        setMetrics(metricsResponse.data.data);
+      }
+      
+      // Fetch pending credits
+      const pendingCreditsResponse = await api.get('/verifier/dashboard/pending-credits');
+      if (pendingCreditsResponse.data.success) {
+        setPendingCredits(pendingCreditsResponse.data.data);
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Fallback to mock data if API fails
       setMetrics({
         totalReviewed: 156,
         approvedCredits: 142,
@@ -88,9 +103,6 @@ const VerifierDashboard = () => {
           comments: 'Carbon intensity exceeds threshold'
         }
       ]);
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -116,6 +128,54 @@ const VerifierDashboard = () => {
 
   const handleVerifyCredit = (creditId, action) => {
     console.log(`Verifying credit ${creditId} with action: ${action}`);
+    // TODO: Implement actual verification logic
+    if (action === 'approve') {
+      console.log(`Credit ${creditId} approved successfully!`);
+    } else {
+      console.log(`Credit ${creditId} rejected.`);
+    }
+  };
+
+  const handleQuickAction = async (action) => {
+    console.log('Verifier Quick Action:', action);
+    
+    try {
+      switch (action) {
+        case 'review-credits':
+          console.log('Opening Credit Review interface...');
+          const pendingResponse = await api.get('/verifier/dashboard/pending-credits');
+          if (pendingResponse.data.success) {
+            console.log('Pending Credits:', pendingResponse.data.data);
+            // TODO: Open credit review modal with data
+          }
+          break;
+        case 'generate-reports':
+          console.log('Generating verification reports...');
+          const reportResponse = await api.get('/verifier/reports/verification');
+          if (reportResponse.data.success) {
+            console.log('Verification Report:', reportResponse.data.data);
+            // TODO: Open report modal with data
+          }
+          break;
+        case 'export-data':
+          console.log('Exporting verification data...');
+          const exportResponse = await api.get('/verifier/export/verification-data?format=csv');
+          if (exportResponse.data) {
+            console.log('Export Data:', exportResponse.data);
+            // TODO: Handle CSV download
+          }
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Error in quick action:', error);
+    }
+  };
+
+  const handleCreditClick = (credit) => {
+    console.log('Credit clicked:', credit);
+    // TODO: Show credit details modal or navigate to credit details page
   };
 
   if (loading) {
@@ -190,7 +250,11 @@ const VerifierDashboard = () => {
           <div className="p-6">
             <div className="space-y-4">
               {pendingCredits.map((credit) => (
-                <div key={credit.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div 
+                  key={credit.id} 
+                  onClick={() => handleCreditClick(credit)}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                >
                   <div className="flex items-center space-x-4">
                     <div className="text-center">
                       <p className="text-lg font-bold text-gray-900">{credit.tokenId}</p>
@@ -209,7 +273,7 @@ const VerifierDashboard = () => {
                       <p className="text-xs text-gray-600">Carbon Intensity</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleVerifyCredit(credit.id, 'approve')}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -231,7 +295,10 @@ const VerifierDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('review-credits')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <FileText className="h-8 w-8 text-blue-600" />
               <div className="text-left">
@@ -241,7 +308,10 @@ const VerifierDashboard = () => {
             </div>
           </button>
 
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('generate-reports')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <BarChart3 className="h-8 w-8 text-green-600" />
               <div className="text-left">
@@ -251,7 +321,10 @@ const VerifierDashboard = () => {
             </div>
           </button>
 
-          <button className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+          <button 
+            onClick={() => handleQuickAction('export-data')}
+            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <Download className="h-8 w-8 text-purple-600" />
               <div className="text-left">
