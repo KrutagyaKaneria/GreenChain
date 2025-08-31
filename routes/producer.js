@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { authenticate: auth } = require('../middleware/auth');
 const IoTSensor = require('../models/IoTSensor');
 const IoTData = require('../models/IoTData');
 const Credit = require('../models/Credit');

@@ -17,6 +17,7 @@ const producerRoutes = require('./routes/producer');
 const verifierRoutes = require('./routes/verifier');
 const buyerRoutes = require('./routes/buyer');
 const regulatorRoutes = require('./routes/regulator');
+const iotRoutes = require('./routes/iot');
 
 // Middleware
 const { authenticate } = require('./middleware/auth');
@@ -78,6 +79,7 @@ app.use('/api/producer', producerRoutes);
 app.use('/api/verifier', verifierRoutes);
 app.use('/api/buyer', buyerRoutes);
 app.use('/api/regulator', regulatorRoutes);
+app.use('/api/iot', iotRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

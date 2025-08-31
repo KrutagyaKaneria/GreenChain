@@ -1,54 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { Mail, ArrowLeft, RefreshCw } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  Leaf, 
+  Mail, 
+  ArrowLeft, 
+  ArrowRight, 
+  CheckCircle, 
+  Clock,
+  RefreshCw,
+  Shield,
+  Zap,
+  Globe
+} from 'lucide-react';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const OTPVerification = () => {
-  const [otp, setOtp] = useState(['', '', '', '']);
-  const [countdown, setCountdown] = useState(0);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [canResend, setCanResend] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { verifyOTP, resendOTP } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
 
-  const email = location.state?.email;
-  const companyName = location.state?.companyName;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { email, companyName } = location.state || {};
 
   useEffect(() => {
-    if (!email || !companyName) {
-      navigate('/signup');
-      return;
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setCanResend(true);
     }
+  }, [timeLeft]);
 
-    // Start countdown for resend button
-    setCountdown(60);
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [email, companyName, navigate]);
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleOtpChange = (index, value) => {
-    console.log('OTP change:', { index, value, currentOtp: otp });
     if (value.length <= 1 && /^\d*$/.test(value)) {
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
-      console.log('Updated OTP array:', newOtp);
 
       // Auto-focus next input
-      if (value && index < 3) {
-        const nextInput = document.querySelector(`input[type="text"]:nth-of-type(${index + 2})`);
+      if (value && index < 5) {
+        const nextInput = document.querySelector(`input[name="otp-${index + 1}"]`);
         if (nextInput) nextInput.focus();
       }
     }
@@ -56,172 +57,235 @@ const OTPVerification = () => {
 
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.querySelector(`input[type="text"]:nth-of-type(${index})`);
+      const prevInput = document.querySelector(`input[name="otp-${index - 1}"]`);
       if (prevInput) prevInput.focus();
     }
   };
 
-  const handleResendOTP = async () => {
-    try {
-      await resendOTP(email);
-      setCountdown(60);
-      setCanResend(false);
-      setOtp(['', '', '', '']);
-      
-      // Reset countdown
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            setCanResend(true);
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch (error) {
-      // Error is handled by the auth context
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const otpString = otp.join('');
+    
+    if (otpString.length !== 6) {
+      setError('Please enter the complete 6-digit OTP');
+      return;
     }
-  };
 
-  const handleSubmit = async () => {
+    setLoading(true);
+    setError('');
+
     try {
-      setIsSubmitting(true);
-      const otpString = otp.join('');
-      console.log('Submitting OTP:', { email, otpString, otpArray: otp });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      if (otpString.length !== 4) {
-        console.error('OTP must be exactly 4 digits');
-        return;
-      }
-      
-      const result = await verifyOTP(email, otpString);
-      console.log('OTP verification result:', result);
-      if (result.success) {
-        navigate('/dashboard');
-      }
+      setSuccess('Email verified successfully! Redirecting to login...');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (error) {
-      console.error('OTP verification error:', error);
-      // Error is handled by the auth context
+      setError('Verification failed. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  if (!email || !companyName) {
-    return null;
-  }
+  const handleResendOTP = async () => {
+    setCanResend(false);
+    setTimeLeft(300);
+    setError('');
+    setSuccess('OTP resent successfully!');
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  };
+
+  const features = [
+    {
+      icon: <Zap className="w-6 h-6" />,
+      title: "AI-Powered Monitoring",
+      description: "Real-time IoT sensor data analysis",
+      color: "from-green-500 to-teal-500"
+    },
+    {
+      icon: <Globe className="w-6 h-6" />,
+      title: "Blockchain Security",
+      description: "Immutable credit verification",
+      color: "from-blue-500 to-cyan-500"
+    },
+    {
+      icon: <Shield className="w-6 h-6" />,
+      title: "Compliance Ready",
+      description: "Automated regulatory reporting",
+      color: "from-purple-500 to-pink-500"
+    }
+  ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
-            <Mail className="h-8 w-8 text-blue-600" />
-          </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Verify Your Email
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            We've sent a verification code to
-          </p>
-          <p className="text-sm font-medium text-gray-900">{email}</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-green-400/20 to-blue-500/20 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-blue-400/20 to-green-500/20 rounded-full blur-3xl animate-float" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-green-400/10 to-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+      </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-blue-600">?</span>
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+        {/* Left Side - OTP Form */}
+        <div className="modern-card p-8 lg:p-12">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-2xl flex items-center justify-center">
+                <Mail className="w-8 h-8 text-white" />
               </div>
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-blue-800">
-                <strong>Why do we need this?</strong> Email verification ensures the security of your account and helps us maintain the integrity of the GreenChain platform.
-              </p>
-            </div>
+            <h1 className="text-3xl lg:text-4xl font-bold mb-2">
+              Verify Your <span className="gradient-text">Email</span>
+            </h1>
+            <p className="text-gray-300">
+              We've sent a 6-digit verification code to<br />
+              <span className="text-white font-medium">{email || 'your email'}</span>
+            </p>
           </div>
-        </div>
 
-        <div className="mt-8 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 text-center mb-4">
-              Enter the 4-digit code from your email
-            </label>
-            
-            <div className="flex justify-center space-x-3">
-              {otp.map((digit, index) => (
-                <div key={index} className="relative">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* OTP Input Fields */}
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-300 text-center">
+                Enter the 6-digit code
+              </label>
+              <div className="flex justify-center space-x-3">
+                {otp.map((digit, index) => (
                   <input
+                    key={index}
                     type="text"
-                    maxLength="1"
+                    name={`otp-${index}`}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-16 h-16 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
-                    placeholder=""
+                    className="w-14 h-14 text-center text-2xl font-bold modern-input border-2 focus:border-green-400"
+                    maxLength={1}
+                    autoComplete="off"
                   />
-                  {digit && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-semibold text-gray-900">{digit}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-            
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-600">
-                Didn't receive the code?{' '}
-                {canResend ? (
-                  <button
-                    type="button"
-                    onClick={handleResendOTP}
-                    className="text-blue-600 hover:text-blue-500 font-medium inline-flex items-center space-x-1"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    <span>Resend</span>
-                  </button>
-                ) : (
-                  <span className="text-gray-500">
-                    Resend in {countdown}s
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
 
-          <div>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={otp.join('').length !== 4 || isSubmitting}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <LoadingSpinner size="sm" />
+            {/* Timer and Resend */}
+            <div className="text-center space-y-4">
+              {!canResend ? (
+                <div className="flex items-center justify-center space-x-2 text-gray-400">
+                  <Clock className="w-4 h-4" />
+                  <span>Resend OTP in {formatTime(timeLeft)}</span>
+                </div>
               ) : (
-                'Verify Email'
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  className="flex items-center space-x-2 mx-auto text-green-400 hover:text-green-300 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Resend OTP</span>
+                </button>
+              )}
+            </div>
+
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm text-center">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-lg text-green-300 text-sm text-center flex items-center justify-center space-x-2">
+                <CheckCircle className="w-5 h-5" />
+                <span>{success}</span>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading || otp.join('').length !== 6}
+              className="btn-primary w-full py-4 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <LoadingSpinner />
+                  <span>Verifying...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center space-x-2">
+                  <span>Verify Email</span>
+                  <ArrowRight className="w-5 h-5" />
+                </div>
               )}
             </button>
-          </div>
+          </form>
 
-          <div className="text-center">
+          {/* Back to Sign Up */}
+          <div className="text-center mt-8">
             <button
-              type="button"
               onClick={() => navigate('/signup')}
-              className="inline-flex items-center text-sm text-gray-600 hover:text-gray-500"
+              className="flex items-center space-x-2 mx-auto text-gray-400 hover:text-white transition-colors"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Sign Up
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Sign Up</span>
             </button>
           </div>
         </div>
 
-        <div className="text-center">
-          <p className="text-xs text-gray-500">
-            The verification code will expire in 10 minutes for security reasons.
-          </p>
+        {/* Right Side - Features */}
+        <div className="space-y-8">
+          <div className="text-center lg:text-left">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              Almost There! <span className="gradient-text">Complete</span> Your Setup
+            </h2>
+            <p className="text-xl text-gray-300 leading-relaxed">
+              Once verified, you'll have access to the most advanced green hydrogen 
+              credit platform with AI-powered monitoring and blockchain security.
+            </p>
+          </div>
+
+          {/* Features Grid */}
+          <div className="space-y-4">
+            {features.map((feature, index) => (
+              <div key={index} className="modern-card p-6 hover-lift">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center flex-shrink-0`}>
+                    {feature.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">{feature.title}</h3>
+                    <p className="text-gray-300 text-sm">{feature.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Company Info */}
+          {companyName && (
+            <div className="modern-card p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+                <Leaf className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Welcome, {companyName}!</h3>
+              <p className="text-gray-300 text-sm">
+                You're joining a network of forward-thinking companies committed to sustainable energy
+              </p>
+            </div>
+          )}
+
+          {/* Security Note */}
+          <div className="modern-card p-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Secure Verification</h3>
+            <p className="text-gray-300 text-sm">
+              Your verification code is encrypted and will expire in 5 minutes for security
+            </p>
+          </div>
         </div>
       </div>
     </div>

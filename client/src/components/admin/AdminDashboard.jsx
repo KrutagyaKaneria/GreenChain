@@ -15,7 +15,11 @@ import {
   Database,
   Wallet,
   Hash,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  Zap,
+  Leaf,
+  Gauge
 } from 'lucide-react';
 import LoadingSpinner from '../common/LoadingSpinner';
 import NotificationToast from '../common/NotificationToast';
@@ -380,6 +384,85 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* IoT Carbon Intensity Monitoring */}
+        <div className="bg-white rounded-lg shadow mb-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">🔌 IoT Carbon Intensity Monitoring</h3>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center text-sm text-gray-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  Real-time Monitoring
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center">
+                  <Leaf className="h-8 w-8 text-green-600 mr-3" />
+                  <div>
+                    <div className="text-2xl font-bold text-green-800">5</div>
+                    <div className="text-sm text-green-700">Active Facilities</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center">
+                  <Zap className="h-8 w-8 text-blue-600 mr-3" />
+                  <div>
+                    <div className="text-2xl font-bold text-blue-800">78%</div>
+                    <div className="text-sm text-blue-700">Avg Renewable</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
+                <div className="flex items-center">
+                  <Gauge className="h-8 w-8 text-yellow-600 mr-3" />
+                  <div>
+                    <div className="text-2xl font-bold text-yellow-800">1.2</div>
+                    <div className="text-sm text-yellow-700">Avg CO2/kg H2</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                <div className="flex items-center">
+                  <Activity className="h-8 w-8 text-purple-600 mr-3" />
+                  <div>
+                    <div className="text-2xl font-bold text-purple-800">2</div>
+                    <div className="text-sm text-purple-700">Anomalies</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-md font-semibold text-gray-900 mb-4">📊 Real-time Monitoring</h4>
+              <div className="flex flex-wrap gap-3">
+                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center">
+                  <Eye className="h-4 w-4 mr-2" /> View Dashboard
+                </button>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
+                  <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+                </button>
+                <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-2" /> Alerts
+                </button>
+              </div>
+            </div>
+
+            <div className="text-sm text-gray-600">
+              <p>🔍 <strong>AI-Powered Monitoring:</strong> Real-time tracking of carbon intensity, renewable energy usage, and efficiency across all hydrogen production facilities.</p>
+              <p>🚨 <strong>Anomaly Detection:</strong> Advanced AI algorithms detect unusual patterns and alert operators to potential issues.</p>
+              <p>📈 <strong>Performance Comparison:</strong> Compare facilities and identify best practices for carbon reduction.</p>
             </div>
           </div>
         </div>

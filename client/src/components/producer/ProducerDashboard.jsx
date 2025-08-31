@@ -1,35 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  Activity, 
-  TrendingUp, 
-  Shield, 
-  AlertTriangle, 
+import {
+  Activity,
+  TrendingUp,
+  Shield,
+  AlertTriangle,
   Plus,
   Settings,
   BarChart3,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  X,
+  Eye,
+  Download,
+  Zap,
+  Leaf,
+  Globe,
+  Database,
+  Users,
+  Award,
+  Target,
+  Gauge,
+  Thermometer,
+  Droplets,
+  Sun,
+  Wind,
+  Battery,
+  AlertCircle
 } from 'lucide-react';
 import LoadingSpinner from '../common/LoadingSpinner';
+import api from '../../utils/api';
 
 const ProducerDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState({
-    todayProduction: 0,
-    currentCarbonIntensity: 0,
-    totalCreditsIssued: 0,
-    activeSensors: 0,
-    inactiveSensors: 0,
-    errorSensors: 0,
+    totalCredits: 0,
+    verifiedCredits: 0,
     pendingVerifications: 0,
-    verifiedCredits: 0
+    totalSensors: 0,
+    activeSensors: 0,
+    productionEfficiency: 0,
+    carbonIntensity: 0,
+    environmentalScore: 0
   });
+  const [recentCredits, setRecentCredits] = useState([]);
   const [recentData, setRecentData] = useState([]);
   const [sensorAlerts, setSensorAlerts] = useState([]);
   const [productionChart, setProductionChart] = useState([]);
+
+  // Modal states
+  const [showSensorModal, setShowSensorModal] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [showSensorManagementModal, setShowSensorManagementModal] = useState(false);
+  const [showDataDetailsModal, setShowDataDetailsModal] = useState(false);
+  const [selectedData, setSelectedData] = useState(null);
+  const [selectedAlert, setSelectedAlert] = useState(null);
+
+  // Action states
+  const [actionLoading, setActionLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
@@ -38,415 +70,332 @@ const ProducerDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Fetch metrics
-      const metricsResponse = await api.get('/producer/dashboard/metrics');
-      if (metricsResponse.data.success) {
-        setMetrics(metricsResponse.data.data);
-      }
-      
-      // Fetch recent data
-      const recentDataResponse = await api.get('/producer/dashboard/recent-data');
-      if (recentDataResponse.data.success) {
-        setRecentData(recentDataResponse.data.data);
-      }
-      
-      // Fetch sensor alerts
-      const alertsResponse = await api.get('/producer/dashboard/sensor-alerts');
-      if (alertsResponse.data.success) {
-        setSensorAlerts(alertsResponse.data.data);
-      }
-      
-      // Fetch production chart data
-      const chartResponse = await api.get('/producer/dashboard/production-chart');
-      if (chartResponse.data.success) {
-        setProductionChart(chartResponse.data.data);
-      }
+      const [metricsRes, creditsRes, dataRes, alertsRes, chartRes] = await Promise.all([
+        api.get('/producer/metrics'),
+        api.get('/producer/credits'),
+        api.get('/producer/data'),
+        api.get('/producer/alerts'),
+        api.get('/producer/chart')
+      ]);
 
+      setMetrics(metricsRes.data.data);
+      setRecentCredits(creditsRes.data.data);
+      setRecentData(dataRes.data.data);
+      setSensorAlerts(alertsRes.data.data);
+      setProductionChart(chartRes.data.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Fallback to mock data if API fails
-      setMetrics({
-        todayProduction: 1250.5,
-        currentCarbonIntensity: 2.1,
-        totalCreditsIssued: 45,
-        activeSensors: 8,
-        inactiveSensors: 1,
-        errorSensors: 0,
-        pendingVerifications: 3,
-        verifiedCredits: 42
-      });
-
-      setRecentData([
-        {
-          id: 1,
-          timestamp: new Date(Date.now() - 1000 * 60 * 15),
-          productionVolume: 125.5,
-          carbonIntensity: 2.1,
-          sensorId: 'SENSOR-001',
-          status: 'validated'
-        },
-        {
-          id: 2,
-          timestamp: new Date(Date.now() - 1000 * 60 * 30),
-          productionVolume: 118.2,
-          carbonIntensity: 2.0,
-          sensorId: 'SENSOR-002',
-          status: 'validated'
-        },
-        {
-          id: 3,
-          timestamp: new Date(Date.now() - 1000 * 60 * 45),
-          productionVolume: 132.8,
-          carbonIntensity: 2.2,
-          sensorId: 'SENSOR-001',
-          status: 'pending'
-        }
-      ]);
-
-      setSensorAlerts([
-        {
-          id: 1,
-          sensorId: 'SENSOR-003',
-          type: 'warning',
-          message: 'Calibration due in 2 days',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60)
-        },
-        {
-          id: 2,
-          sensorId: 'SENSOR-005',
-          type: 'info',
-          message: 'Maintenance completed successfully',
-          timestamp: new Date(Date.now() - 1000 * 60 * 120)
-        }
-      ]);
-
-      // Mock production chart data
-      const chartData = [];
-      for (let i = 23; i >= 0; i--) {
-        const hour = new Date(Date.now() - i * 60 * 60 * 1000);
-        chartData.push({
-          hour: hour.getHours(),
-          production: Math.random() * 100 + 50,
-          carbonIntensity: Math.random() * 1 + 1.5
-        });
-      }
-      setProductionChart(chartData);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'validated': return 'text-green-600 bg-green-100';
-      case 'pending': return 'text-yellow-600 bg-yellow-100';
-      case 'error': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getAlertIcon = (type) => {
-    switch (type) {
-      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-      case 'error': return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'info': return <Clock className="h-5 w-5 text-blue-500" />;
-      default: return <Activity className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
   const handleQuickAction = async (action) => {
-    console.log('Producer Quick Action:', action);
-    
     try {
+      setActionLoading(true);
+      setErrorMessage('');
+
       switch (action) {
         case 'add-sensor':
-          console.log('Opening Add Sensor form...');
-          const sensorsResponse = await api.get('/producer/sensors');
-          if (sensorsResponse.data.success) {
-            console.log('Current Sensors:', sensorsResponse.data.data);
-            // TODO: Open add sensor modal with current sensors data
-          }
+          setShowSensorModal(true);
           break;
         case 'issue-credits':
-          console.log('Opening Issue Credits form...');
-          const creditsResponse = await api.get('/producer/credits');
-          if (creditsResponse.data.success) {
-            console.log('Current Credits:', creditsResponse.data.data);
-            // TODO: Open credit issuance modal with current credits data
-          }
+          setShowCreditModal(true);
           break;
         case 'sensor-management':
-          console.log('Opening Sensor Management...');
-          const sensorMgmtResponse = await api.get('/producer/sensors');
-          if (sensorMgmtResponse.data.success) {
-            console.log('Sensor Management:', sensorMgmtResponse.data.data);
-            // TODO: Open sensor management modal with data
-          }
+          setShowSensorManagementModal(true);
           break;
         default:
           break;
       }
     } catch (error) {
       console.error('Error in quick action:', error);
+      setErrorMessage('Failed to perform action');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleAlertClick = (alert) => {
-    console.log('Sensor Alert clicked:', alert);
-    // TODO: Handle alert actions (dismiss, view sensor details, etc.)
+    setSelectedAlert(alert);
+    // TODO: Show alert details modal
   };
 
   const handleDataClick = (data) => {
-    console.log('Production Data clicked:', data);
-    // TODO: Handle data actions (view details, edit, etc.)
+    setSelectedData(data);
+    setShowDataDetailsModal(true);
   };
 
   const handleChartClick = (data, index) => {
-    console.log('Chart data clicked:', { data, index });
-    // TODO: Show detailed view for this time period
+    console.log('Chart data clicked:', data, 'at index:', index);
+    // TODO: Show detailed chart view or data analysis
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="xl" color="green" />
+          <p className="text-gray-300 mt-4 text-lg">Loading your producer dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Producer Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back, {user?.companyName}. Monitor your hydrogen production and credit status.</p>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Today's Production</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.todayProduction.toFixed(1)} kg</p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-sm text-green-600">+5.2% vs yesterday</span>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">
+              Welcome back, <span className="gradient-text">{user?.name}</span>
+            </h1>
+            <p className="text-xl text-gray-300">Monitor your green hydrogen production and manage credits</p>
           </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Shield className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Carbon Intensity</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.currentCarbonIntensity} kg CO₂/kg H₂</p>
-              </div>
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center">
+              <Zap className="w-6 h-6 text-white" />
             </div>
-            <div className="mt-4">
-              <span className="text-sm text-green-600">RFNBO compliant</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Activity className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Credits</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.totalCreditsIssued}</p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-sm text-yellow-600">{metrics.pendingVerifications} pending verification</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Settings className="h-6 w-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Sensor Status</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.activeSensors}/{metrics.activeSensors + metrics.inactiveSensors + metrics.errorSensors}</p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-sm text-red-600">{metrics.errorSensors} errors</span>
+            <div className="text-right">
+              <div className="text-sm text-gray-400">Role</div>
+              <div className="text-white font-semibold capitalize">{user?.role}</div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Production Chart and Sensor Status */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Production Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">24-Hour Production</h3>
-            <div className="h-64 flex items-end justify-between space-x-1">
-              {productionChart.map((data, index) => (
-                <div 
-                  key={index} 
-                  onClick={() => handleChartClick(data, index)}
-                  className="flex flex-col items-center space-y-2 cursor-pointer group"
-                >
-                  <div 
-                    className="w-8 bg-blue-500 rounded-t hover:bg-blue-600 transition-colors" 
-                    style={{ height: `${(data.production / 150) * 200}px` }}
-                    title={`${data.hour}:00 - ${data.production.toFixed(1)} kg (${data.carbonIntensity.toFixed(2)} kg CO₂/kg H₂)`}
-                  ></div>
-                  <span className="text-xs text-gray-500 group-hover:text-blue-600 transition-colors">{data.hour}:00</span>
-                </div>
-              ))}
+      {/* Key Metrics Grid */}
+      <div className="modern-grid-2 mb-8">
+        <div className="modern-card p-6 hover-lift">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
+              <Award className="w-6 h-6 text-white" />
             </div>
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-600">Production Volume (kg) over 24 hours</p>
-            </div>
+            <TrendingUp className="w-6 h-6 text-green-400" />
           </div>
-
-          {/* Sensor Status */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Sensor Status</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-900">Active Sensors</span>
-                </div>
-                <span className="text-lg font-bold text-green-600">{metrics.activeSensors}</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-900">Inactive Sensors</span>
-                </div>
-                <span className="text-lg font-bold text-yellow-600">{metrics.inactiveSensors}</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-900">Error Sensors</span>
-                </div>
-                <span className="text-lg font-bold text-red-600">{metrics.errorSensors}</span>
-              </div>
-            </div>
-          </div>
+          <div className="text-3xl font-bold text-white mb-1">{metrics.totalCredits.toLocaleString()}</div>
+          <div className="text-gray-400">Total Credits Issued</div>
         </div>
 
-        {/* Recent Data and Alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Recent Production Data */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Production Data</h3>
+        <div className="modern-card p-6 hover-lift">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-white" />
             </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                              {recentData.map((data) => (
-                <div 
-                  key={data.id} 
-                  onClick={() => handleDataClick(data)}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className={`p-2 rounded-full ${getStatusColor(data.status)}`}>
-                      {data.status === 'validated' && <CheckCircle className="h-4 w-4" />}
-                      {data.status === 'pending' && <Clock className="h-4 w-4" />}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{data.productionVolume} kg</p>
-                      <p className="text-sm text-gray-600">{data.carbonIntensity} kg CO₂/kg H₂</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-900">{data.sensorId}</p>
-                    <p className="text-xs text-gray-500">
-                      {data.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              </div>
-            </div>
+            <CheckCircle className="w-6 h-6 text-blue-400" />
           </div>
-
-          {/* Sensor Alerts */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Sensor Alerts</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-3">
-                              {sensorAlerts.map((alert) => (
-                <div 
-                  key={alert.id} 
-                  onClick={() => handleAlertClick(alert)}
-                  className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                >
-                  {getAlertIcon(alert.type)}
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900">{alert.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Sensor: {alert.sensorId} • {alert.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              </div>
-            </div>
-          </div>
+          <div className="text-3xl font-bold text-white mb-1">{metrics.verifiedCredits.toLocaleString()}</div>
+          <div className="text-gray-400">Verified Credits</div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <button 
+        <div className="modern-card p-6 hover-lift">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+              <Clock className="w-6 h-6 text-white" />
+            </div>
+            <AlertTriangle className="w-6 h-6 text-orange-400" />
+          </div>
+          <div className="text-3xl font-bold text-white mb-1">{metrics.pendingVerifications}</div>
+          <div className="text-gray-400">Pending Verifications</div>
+        </div>
+
+        <div className="modern-card p-6 hover-lift">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <Database className="w-6 h-6 text-white" />
+            </div>
+            <Activity className="w-6 h-6 text-purple-400" />
+          </div>
+          <div className="text-3xl font-bold text-white mb-1">{metrics.totalSensors}</div>
+          <div className="text-gray-400">Active Sensors</div>
+        </div>
+      </div>
+
+      {/* Environmental Metrics */}
+      <div className="modern-grid-3 mb-8">
+        <div className="modern-card p-6 text-center hover-lift">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center">
+            <Gauge className="w-8 h-8 text-white" />
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{metrics.productionEfficiency}%</div>
+          <div className="text-gray-400">Production Efficiency</div>
+        </div>
+
+        <div className="modern-card p-6 text-center hover-lift">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+            <Thermometer className="w-8 h-8 text-white" />
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{metrics.carbonIntensity} kg CO2/kg H2</div>
+          <div className="text-gray-400">Carbon Intensity</div>
+        </div>
+
+        <div className="modern-card p-6 text-center hover-lift">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center">
+            <Target className="w-8 h-8 text-white" />
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{metrics.environmentalScore}/100</div>
+          <div className="text-gray-400">Environmental Score</div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="modern-card p-6 mb-8">
+        <h2 className="text-2xl font-bold text-white mb-6">Quick Actions</h2>
+        <div className="modern-grid-3">
+          <button
             onClick={() => handleQuickAction('add-sensor')}
-            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+            disabled={actionLoading}
+            className="modern-card p-6 text-center hover-lift transition-all duration-300 hover:scale-105"
           >
-            <div className="flex items-center space-x-3">
-              <Plus className="h-8 w-8 text-green-600" />
-              <div className="text-left">
-                <h4 className="font-semibold text-gray-900">Add Sensor</h4>
-                <p className="text-sm text-gray-600">Register new IoT sensor</p>
-              </div>
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center">
+              <Plus className="w-8 h-8 text-white" />
             </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Add Sensor</h3>
+            <p className="text-gray-300 text-sm">Register new IoT sensor</p>
           </button>
 
-          <button 
+          <button
             onClick={() => handleQuickAction('issue-credits')}
-            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+            disabled={actionLoading}
+            className="modern-card p-6 text-center hover-lift transition-all duration-300 hover:scale-105"
           >
-            <div className="flex items-center space-x-3">
-              <BarChart3 className="h-8 w-8 text-blue-600" />
-              <div className="text-left">
-                <h4 className="font-semibold text-gray-900">Issue Credits</h4>
-                <p className="text-sm text-gray-600">Create new hydrogen credits</p>
-              </div>
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+              <Leaf className="w-8 h-8 text-white" />
             </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Issue Credits</h3>
+            <p className="text-gray-300 text-sm">Generate new credits</p>
           </button>
 
-          <button 
+          <button
             onClick={() => handleQuickAction('sensor-management')}
-            className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer hover:bg-gray-50"
+            disabled={actionLoading}
+            className="modern-card p-6 text-center hover-lift transition-all duration-300 hover:scale-105"
           >
-            <div className="flex items-center space-x-3">
-              <Settings className="h-8 w-8 text-purple-600" />
-              <div className="text-left">
-                <h4 className="font-semibold text-gray-900">Sensor Management</h4>
-                <p className="text-sm text-gray-600">Configure and calibrate sensors</p>
-              </div>
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+              <Settings className="w-8 h-8 text-white" />
             </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Sensor Management</h3>
+            <p className="text-gray-300 text-sm">Configure & monitor sensors</p>
           </button>
         </div>
       </div>
+
+      {/* Recent Activity & Alerts */}
+      <div className="modern-grid-2 gap-8">
+        {/* Recent Credits */}
+        <div className="modern-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Recent Credits</h2>
+            <button className="text-green-400 hover:text-green-300 transition-colors">
+              View All
+            </button>
+          </div>
+          <div className="space-y-4">
+            {recentCredits.slice(0, 5).map((credit, index) => (
+              <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${credit.status === 'verified' ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
+                  <div>
+                    <div className="text-white font-medium">{credit.amount} kg H2</div>
+                    <div className="text-gray-400 text-sm">{credit.date}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-sm font-medium ${credit.status === 'verified' ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {credit.status}
+                  </div>
+                  <div className="text-gray-400 text-xs">{credit.id}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sensor Alerts */}
+        <div className="modern-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Sensor Alerts</h2>
+            <button className="text-red-400 hover:text-red-300 transition-colors">
+              View All
+            </button>
+          </div>
+          <div className="space-y-4">
+            {sensorAlerts.slice(0, 5).map((alert, index) => (
+              <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${alert.severity === 'high' ? 'bg-red-400' : alert.severity === 'medium' ? 'bg-yellow-400' : 'bg-blue-400'}`}></div>
+                  <div>
+                    <div className="text-white font-medium">{alert.sensorName}</div>
+                    <div className="text-gray-400 text-sm">{alert.message}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-sm font-medium ${alert.severity === 'high' ? 'text-red-400' : alert.severity === 'medium' ? 'text-yellow-400' : 'text-blue-400'}`}>
+                    {alert.severity}
+                  </div>
+                  <div className="text-gray-400 text-xs">{alert.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Production Data Chart */}
+      <div className="modern-card p-6 mt-8">
+        <h2 className="text-2xl font-bold text-white mb-6">Production Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="text-center p-4 bg-white/5 rounded-lg">
+            <Sun className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+            <div className="text-white font-semibold">Solar</div>
+            <div className="text-gray-400 text-sm">45%</div>
+          </div>
+          <div className="text-center p-4 bg-white/5 rounded-lg">
+            <Wind className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+            <div className="text-white font-semibold">Wind</div>
+            <div className="text-gray-400 text-sm">30%</div>
+          </div>
+          <div className="text-center p-4 bg-white/5 rounded-lg">
+            <Battery className="w-8 h-8 text-green-400 mx-auto mb-2" />
+            <div className="text-white font-semibold">Storage</div>
+            <div className="text-gray-400 text-sm">15%</div>
+          </div>
+          <div className="text-center p-4 bg-white/5 rounded-lg">
+            <Droplets className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+            <div className="text-white font-semibold">Grid</div>
+            <div className="text-gray-400 text-sm">10%</div>
+          </div>
+        </div>
+        <div className="h-64 bg-white/5 rounded-lg flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p>Production chart visualization</p>
+            <p className="text-sm">Click to view detailed analytics</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className="fixed bottom-6 right-6 modern-card p-4 animate-slide-up">
+          <div className="flex items-center space-x-3 text-green-400">
+            <CheckCircle className="w-5 h-5" />
+            <span>{successMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="fixed bottom-6 right-6 modern-card p-4 animate-slide-up">
+          <div className="flex items-center space-x-3 text-red-400">
+            <AlertCircle className="w-5 h-5" />
+            <span>{errorMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Modals would go here - Add Sensor, Issue Credits, etc. */}
     </div>
   );
 };

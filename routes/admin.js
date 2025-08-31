@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { authenticate: auth } = require('../middleware/auth');
 const User = require('../models/User');
 const IoTSensor = require('../models/IoTSensor');
 const Credit = require('../models/Credit');
 const MarketplaceListing = require('../models/MarketplaceListing');
 const SystemConfig = require('../models/SystemConfig');
 const AuditLog = require('../models/AuditLog');
-const BlockchainService = require('../services/blockchainService');
+const MockBlockchainService = require('../services/mockBlockchainService');
 
 // Admin dashboard metrics
 router.get('/dashboard/metrics', auth, async (req, res) => {
@@ -98,7 +98,7 @@ router.get('/dashboard/system-alerts', auth, async (req, res) => {
 router.get('/blockchain/status', auth, async (req, res) => {
   try {
     // Initialize blockchain service (using mock for demo)
-    const blockchainService = new BlockchainService();
+    const blockchainService = new MockBlockchainService();
     await blockchainService.initialize();
     
     // Get blockchain data
@@ -130,7 +130,7 @@ router.post('/blockchain/test-issue-credit', auth, async (req, res) => {
   try {
     const { producerAddress, hydrogenAmount, carbonIntensity, ipfsHash } = req.body;
     
-    const blockchainService = new BlockchainService();
+    const blockchainService = new MockBlockchainService();
     await blockchainService.initialize();
     
     const result = await blockchainService.issueCredit(
@@ -152,7 +152,7 @@ router.post('/blockchain/test-verify-credit', auth, async (req, res) => {
   try {
     const { tokenId, verificationNotes } = req.body;
     
-    const blockchainService = new BlockchainService();
+    const blockchainService = new MockBlockchainService();
     await blockchainService.initialize();
     
     const result = await blockchainService.verifyCredit(
@@ -172,7 +172,7 @@ router.post('/blockchain/test-create-listing', auth, async (req, res) => {
   try {
     const { tokenId, price, expiryDays } = req.body;
     
-    const blockchainService = new BlockchainService();
+    const blockchainService = new MockBlockchainService();
     await blockchainService.initialize();
     
     const result = await blockchainService.createListing(
@@ -191,7 +191,7 @@ router.post('/blockchain/test-create-listing', auth, async (req, res) => {
 // Get blockchain transaction history
 router.get('/blockchain/transactions', auth, async (req, res) => {
   try {
-    const blockchainService = new BlockchainService();
+    const blockchainService = new MockBlockchainService();
     await blockchainService.initialize();
     
     const transactionHistory = await blockchainService.getTransactionHistory();
